@@ -16,7 +16,7 @@ namespace Core.Repository.MongoDb
     /// Generic Mongo Repository
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class MongoRepository<T> : IRepository<T> where T : IEntity, IVersionable
+    public class MongoRepository<T> : IRepository<T> where T : IEntity
     {
         /// <summary>
         /// Mongo Database
@@ -87,13 +87,15 @@ namespace Core.Repository.MongoDb
             return pluralizedName;
         }
 
+
         /// <summary>
         /// Inserts the specified entity.
         /// </summary>
         /// <param name="entity">The entity.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
         /// <exception cref="RepositoryException"></exception>
-        public async Task<T> Insert(T entity)
+        public async Task<T> Insert(T entity, CancellationToken cancellationToken = default(CancellationToken))
         {
             Guard.ThrowIfNull(entity, "entity");
 
@@ -106,21 +108,25 @@ namespace Core.Repository.MongoDb
             {
                 entity.CreatedDate = DateTime.UtcNow;
                 entity.UpdatedDate = DateTime.UtcNow;
-                await this._collection.InsertOneAsync(entity);
-            }catch(Exception ex) {
+                await this._collection.InsertOneAsync(entity, cancellationToken);
+            }
+            catch (Exception ex)
+            {
                 throw new RepositoryException(ex.Message);
             }
 
             return entity;
         }
 
+
         /// <summary>
         /// Updates the specified entity.
         /// </summary>
         /// <param name="entity">The entity.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        /// <exception cref="RepositoryException">Document is out of date.</exception>
-        public async Task<T> Update(T entity)
+        /// <exception cref="RepositoryException">Document version conflits. (Is out of date)</exception>
+        public async Task<T> Update(T entity, CancellationToken cancellationToken = default(CancellationToken))
         {
             Guard.ThrowIfNull(entity, "entity");
 
@@ -129,15 +135,16 @@ namespace Core.Repository.MongoDb
             entity.UpdatedDate = DateTime.UtcNow;
             entity.Version++;
 
-            ReplaceOneResult result; 
+            ReplaceOneResult result;
 
             var idFilter = Builders<T>.Filter.Eq(e => e.Id, entity.Id); //Find entity with same Id
 
             //Consistency enforcement
-            if (!entity.IgnoreVersion()) {
+            if (!this.IgnoreVersion())
+            {
                 var versionFilter = Builders<T>.Filter.Lt(e => e.Version, entity.Version); // EntityVersion > CurrentVersion
                 var filters = Builders<T>.Filter.And(idFilter, versionFilter);
-                result = await this._collection.ReplaceOneAsync(filters, entity);
+                result = await this._collection.ReplaceOneAsync(filters, entity, null, cancellationToken);
 
                 if (result.IsModifiedCountAvailable && result.ModifiedCount == 0)
                 {
@@ -147,8 +154,8 @@ namespace Core.Repository.MongoDb
                 return entity;
             }
             else
-            {            
-                result = await this._collection.ReplaceOneAsync(idFilter, entity);
+            {
+                result = await this._collection.ReplaceOneAsync(idFilter, entity, null, cancellationToken);
 
                 //Check if the entity was modified
                 if (result.IsModifiedCountAvailable && result.ModifiedCount > 0)
@@ -163,50 +170,68 @@ namespace Core.Repository.MongoDb
             return default(T);
         }
 
+
         /// <summary>
-        /// Gets the entity by Id.
+        /// Gets entity by id.
         /// </summary>
         /// <param name="id">The identifier.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<T> Get(string id)
+        public async Task<T> Get(string id, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this._collection.Find(e => e.Id == id).FirstOrDefaultAsync();
+            return await this._collection.Find(e => e.Id == id).FirstOrDefaultAsync(cancellationToken);
         }
 
         /// <summary>
-        /// Deletes the entity by Id.
+        /// Deletes entity by id.
         /// </summary>
         /// <param name="id">The identifier.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<T> Delete(string id)
+        public async Task<T> Delete(string id, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this._collection.FindOneAndDeleteAsync(e => e.Id == id);
+            return await this._collection.FindOneAndDeleteAsync(e => e.Id == id, null, cancellationToken);
         }
 
+
         /// <summary>
-        /// Gets all Entities.
+        /// Gets all entities.
         /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<T>> GetAll()
+        public async Task<IEnumerable<T>> GetAll(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this._collection.Find(e => true).ToListAsync();
+            return await this._collection.Find(e => true).ToListAsync(cancellationToken);
         }
 
+
         /// <summary>
-        /// Paginations entities.
+        /// Paginations the entites.
         /// </summary>
         /// <param name="top">The top.</param>
         /// <param name="skip">The skip.</param>
         /// <param name="orderBy">The order by.</param>
         /// <param name="ascending">if set to <c>true</c> [ascending].</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<T>> Pagination(int top, int skip, Func<T, object> orderBy, bool ascending = true) {
-            var query =  this._collection.Find(e => true).Skip(skip).Limit(top);
+        public async Task<IEnumerable<T>> Pagination(int top, int skip, Func<T, object> orderBy, bool ascending = true, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var query = this._collection.Find(e => true).Skip(skip).Limit(top);
 
             if (ascending)
-               return await query.SortBy(e => e.Id).ToListAsync();
+                return await query.SortBy(e => e.Id).ToListAsync();
             else
-                return await query.SortByDescending(e => e.Id).ToListAsync();         
+                return await query.SortByDescending(e => e.Id).ToListAsync(cancellationToken);
+        }
+
+
+        /// <summary>
+        /// Ignores the document version.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool IgnoreVersion()
+        {
+            return false;
         }
     }
 }

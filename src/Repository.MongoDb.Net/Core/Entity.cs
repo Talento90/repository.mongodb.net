@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Core
 {
-    public abstract class Entity : IEntity, IVersionable
+    public class Entity : IEntity
     {
         public string Id { get; set; }
 
@@ -22,7 +22,5 @@ namespace Core
         {
             this.Metadata = new Dictionary<string, object>();
         }
-
-        public abstract bool IgnoreVersion();
     }
 }

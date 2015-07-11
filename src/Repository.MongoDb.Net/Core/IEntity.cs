@@ -43,5 +43,14 @@ namespace Core
         /// The metadata.
         /// </value>
         IDictionary<string, object> Metadata { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets the version.
+        /// </summary>
+        /// <value>
+        /// The version.
+        /// </value>
+        long Version { get; set; }
     }
 }
