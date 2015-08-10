@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/va25mgec2bfvsm6w?svg=true)](https://ci.appveyor.com/project/Talento90/repository-mongodb-net)
+
 # Repository.MongoDb.Net
 A simple generic MongoDb repository (Driver 2.0.1) for C# language. This repository contains the basic CRUD methods (Get, Delete, Update, Insert, GetAll, Pagination).
 
