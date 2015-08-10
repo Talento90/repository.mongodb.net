@@ -5,5 +5,6 @@ A simple generic MongoDb repository (Driver 2.0.1) for C# language. This reposit
  - Completely Asynchronous
  - Document Version (Consistency)
  - Integration Tests
+ - Exception Handling
 
 PS: To run the tests it's necessary to configure the connectionString in folder *"Core.Repository.MongoDb.Tests"*.
