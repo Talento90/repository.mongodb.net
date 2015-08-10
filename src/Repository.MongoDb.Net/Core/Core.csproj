@@ -40,7 +40,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoreException.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Repository\EntityConflictException.cs" />
+    <Compile Include="Repository\EntityDuplicateException.cs" />
+    <Compile Include="Repository\EntityException.cs" />
     <Compile Include="Utils\Guard.cs" />
     <Compile Include="IEntity.cs" />
     <Compile Include="Product.cs" />

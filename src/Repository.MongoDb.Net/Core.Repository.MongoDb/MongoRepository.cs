@@ -72,9 +72,16 @@ namespace Core.Repository.MongoDb
         /// <returns></returns>
         protected virtual IMongoCollection<T> SetupCollection()
         {
-            var collectionName = this.BuildCollectionName();
-            var collection = this._database.GetCollection<T>(collectionName);
-            return collection;
+            try
+            {
+                var collectionName = this.BuildCollectionName();
+                var collection = this._database.GetCollection<T>(collectionName);
+                return collection;
+            }
+            catch (MongoException ex)
+            {
+                throw new RepositoryException(ex.Message);
+            }
         }
 
         /// <summary>
@@ -110,9 +117,9 @@ namespace Core.Repository.MongoDb
                 entity.UpdatedDate = DateTime.UtcNow;
                 await this._collection.InsertOneAsync(entity, cancellationToken);
             }
-            catch (Exception ex)
+            catch (MongoWriteException ex)
             {
-                throw new RepositoryException(ex.Message);
+                throw new EntityDuplicateException(entity, "Insert failed because the entity already exists!", ex);
             }
 
             return entity;
@@ -142,32 +149,29 @@ namespace Core.Repository.MongoDb
             //Consistency enforcement
             if (!this.IgnoreVersion())
             {
-                var versionFilter = Builders<T>.Filter.Lt(e => e.Version, entity.Version); // EntityVersion > CurrentVersion
-                var filters = Builders<T>.Filter.And(idFilter, versionFilter);
-                result = await this._collection.ReplaceOneAsync(filters, entity, null, cancellationToken);
+                var versionLowerThan = Builders<T>.Filter.Lt(e => e.Version, entity.Version);
 
-                if (result.IsModifiedCountAvailable && result.ModifiedCount == 0)
-                {
-                    throw new RepositoryException("Document version conflits. (Is out of date)");
-                }
+                result = await this.Collection.ReplaceOneAsync(
+                    // Consistency enforcement: Where current._id = entity.Id AND entity.Version > current.Version
+                    Builders<T>.Filter.And(idFilter, versionLowerThan),
+                    entity,
+                    null,
+                    cancellationToken);
 
-                return entity;
+                if (result != null && ((result.IsAcknowledged && result.MatchedCount == 0) || (result.IsModifiedCountAvailable && !(result.ModifiedCount > 0))))
+                    throw new EntityConflictException(entity, "Update failed because entity versions conflict!");
             }
             else
             {
-                result = await this._collection.ReplaceOneAsync(idFilter, entity, null, cancellationToken);
+                result = await this.Collection.ReplaceOneAsync(idFilter, entity, null, cancellationToken);
 
-                //Check if the entity was modified
-                if (result.IsModifiedCountAvailable && result.ModifiedCount > 0)
-                {
-                    return entity;
-                }
+                if (result != null && ((result.IsAcknowledged && result.MatchedCount == 0) || (result.IsModifiedCountAvailable && !(result.ModifiedCount > 0))))
+                    throw new EntityException(entity, "Entity does not exist.");
+
+
             }
 
-            //Revert entity changes
-            entity.UpdatedDate = previousUpdateDate;
-            entity.Version = previuosVersion;
-            return default(T);
+            return entity;
         }
 
 

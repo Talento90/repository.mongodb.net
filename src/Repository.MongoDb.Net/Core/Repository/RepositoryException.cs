@@ -7,8 +7,16 @@ using System.Threading.Tasks;
 namespace Core.Repository
 {
     [Serializable]
-    public class RepositoryException : Exception
+    public class RepositoryException : CoreException
     {
+        public override int InternalExceptionCode
+        {
+            get
+            {
+                return CoreException.RepositoryExpectionCode;
+            }
+        }
+
         public RepositoryException(string message)
             : base(message)
         {

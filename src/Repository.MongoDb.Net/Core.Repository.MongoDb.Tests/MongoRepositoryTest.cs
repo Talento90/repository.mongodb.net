@@ -110,7 +110,7 @@ namespace Core.Repository.MongoDb.Tests
 
         [TestMethod]
         [TestCategory("Integration")]
-        [ExpectedException(typeof(RepositoryException))]
+        [ExpectedException(typeof(EntityDuplicateException))]
         public async Task Insert_Duplicated_Entity_Exception()
         {
             var prodId = "DuplicatedId" + DateTime.UtcNow.ToString();
@@ -150,7 +150,7 @@ namespace Core.Repository.MongoDb.Tests
 
         [TestMethod]
         [TestCategory("Integration")]
-        [ExpectedException(typeof(RepositoryException))]
+        [ExpectedException(typeof(EntityConflictException))]
         public async Task Update_Version_Conflit_Entity_Exception()
         {
             var productName = "Product" + DateTime.UtcNow.ToString();
