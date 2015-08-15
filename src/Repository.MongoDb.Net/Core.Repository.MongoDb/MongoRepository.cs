@@ -102,7 +102,7 @@ namespace Core.Repository.MongoDb
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
         /// <exception cref="RepositoryException"></exception>
-        public async Task<T> Insert(T entity, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<T> Insert(T entity, CancellationToken cancellationToken = default(CancellationToken))
         {
             Guard.ThrowIfNull(entity, "entity");
 
@@ -133,7 +133,7 @@ namespace Core.Repository.MongoDb
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
         /// <exception cref="RepositoryException">Document version conflits. (Is out of date)</exception>
-        public async Task<T> Update(T entity, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<T> Update(T entity, CancellationToken cancellationToken = default(CancellationToken))
         {
             Guard.ThrowIfNull(entity, "entity");
 
@@ -181,7 +181,7 @@ namespace Core.Repository.MongoDb
         /// <param name="id">The identifier.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<T> Get(string id, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<T> Get(string id, CancellationToken cancellationToken = default(CancellationToken))
         {
             return await this._collection.Find(e => e.Id == id).FirstOrDefaultAsync(cancellationToken);
         }
@@ -192,7 +192,7 @@ namespace Core.Repository.MongoDb
         /// <param name="id">The identifier.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<T> Delete(string id, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<T> Delete(string id, CancellationToken cancellationToken = default(CancellationToken))
         {
             return await this._collection.FindOneAndDeleteAsync(e => e.Id == id, null, cancellationToken);
         }
@@ -203,7 +203,7 @@ namespace Core.Repository.MongoDb
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<T>> GetAll(CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<IEnumerable<T>> GetAll(CancellationToken cancellationToken = default(CancellationToken))
         {
             return await this._collection.Find(e => true).ToListAsync(cancellationToken);
         }
@@ -218,7 +218,7 @@ namespace Core.Repository.MongoDb
         /// <param name="ascending">if set to <c>true</c> [ascending].</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<T>> Pagination(int top, int skip, Func<T, object> orderBy, bool ascending = true, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<IEnumerable<T>> Pagination(int top, int skip, Func<T, object> orderBy, bool ascending = true, CancellationToken cancellationToken = default(CancellationToken))
         {
             var query = this._collection.Find(e => true).Skip(skip).Limit(top);
 
